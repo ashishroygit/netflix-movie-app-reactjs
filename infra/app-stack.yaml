@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Orion app on ECS Fargate (ALB + Service)
+Parameters:
+  NamePrefix:     { Type: String, Default: orion }
+  ImageUri:       { Type: String, Description: "ECR image URI with tag" }
+  DesiredCount:   { Type: Number, Default: 1 }
+  Cpu:            { Type: Number, Default: 256, AllowedValues: [256,512,1024,2048,4096] }
+  Memory:         { Type: Number, Default: 512, AllowedValues: [512,1024,2048,3072,4096,5120,6144,8192] }
+  ContainerPort:  { Type: Number, Default: 80 }
+  HealthCheckPath:{ Type: String, Default: /health }
+
+Resources:
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${NamePrefix}-TaskExecutionRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: [ { Effect: Allow, Principal: { Service: ecs-tasks.amazonaws.com }, Action: sts:AssumeRole } ]
+      ManagedPolicyArns: [ arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy ]
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${NamePrefix}-TaskRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: [ { Effect: Allow, Principal: { Service: ecs-tasks.amazonaws.com }, Action: sts:AssumeRole } ]
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${NamePrefix}-alb'
+      Scheme: internet-facing
+      Type: application
+      SecurityGroups: [ !ImportValue { "Fn::Sub": "${NamePrefix}-AlbSg" } ]
+      Subnets: !Split [ ",", !ImportValue { "Fn::Sub": "${NamePrefix}-PublicSubnets" } ]
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${NamePrefix}-tg'
+      TargetType: ip
+      VpcId: !ImportValue { "Fn::Sub": "${NamePrefix}-VpcId" }
+      Protocol: HTTP
+      Port: 80
+      HealthCheckPath: !Ref HealthCheckPath
+      Matcher: { HttpCode: 200 }
+
+  ListenerHttp:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions: [ { Type: forward, TargetGroupArn: !Ref TargetGroup } ]
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${NamePrefix}-task'
+      Cpu: !Ref Cpu
+      Memory: !Ref Memory
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Sub '${NamePrefix}'
+          Image: !Ref ImageUri
+          Essential: true
+          PortMappings: [ { ContainerPort: !Ref ContainerPort, Protocol: tcp } ]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !ImportValue { "Fn::Sub": "${NamePrefix}-LogGroup" }
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: app
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: ListenerHttp
+    Properties:
+      ServiceName: !Sub '${NamePrefix}-svc'
+      Cluster: !ImportValue { "Fn::Sub": "${NamePrefix}-ClusterName" }
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      TaskDefinition: !Ref TaskDefinition
+      HealthCheckGracePeriodSeconds: 60
+      DeploymentConfiguration: { MaximumPercent: 200, MinimumHealthyPercent: 50 }
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: [ !ImportValue { "Fn::Sub": "${NamePrefix}-ServiceSg" } ]
+          Subnets: !Split [ ",", !ImportValue { "Fn::Sub": "${NamePrefix}-PrivateSubnets" } ]
+      LoadBalancers:
+        - ContainerName: !Sub '${NamePrefix}'
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref TargetGroup
+
+Outputs:
+  AppUrl:
+    Description: Public URL for the app
+    Value: !Sub 'http://${LoadBalancer.DNSName}'

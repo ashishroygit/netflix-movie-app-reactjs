@@ -102,3 +102,4 @@ Outputs:
     Value: !Ref AppLogGroup
     Export:
       Name: !Sub '${NamePrefix}-LogGroup'
+

@@ -1,5 +1,5 @@
 name: OIDC check
-on: workflow_dispatch  # run it manually from the Actions
+on: workflow_dispatch  # run it manually from the Actions tab
 
 jobs:
   assume-role-test:

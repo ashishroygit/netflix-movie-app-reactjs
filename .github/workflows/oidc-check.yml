@@ -1,0 +1,22 @@
+name: OIDC check
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev, main]
+
+jobs:
+  assume-role-test:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Who am I?
+        run: aws sts get-caller-identity

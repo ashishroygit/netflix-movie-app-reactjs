@@ -3,6 +3,8 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
+  # optional: manual button in Actions
+  workflow_dispatch: {}
 
 concurrency:
   group: cd-${{ github.event.workflow_run.head_branch }}
@@ -11,11 +13,13 @@ concurrency:
 jobs:
   deploy:
     if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      (github.event.workflow_run.head_branch == 'dev' || github.event.workflow_run.head_branch == 'main')
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.head_branch == 'dev' || github.event.workflow_run.head_branch == 'main'))
+      || (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
-      id-token: write     # OIDC for AWS
+      id-token: write
       contents: read
 
     # branch -> environment
@@ -29,7 +33,10 @@ jobs:
       ECR_REPO: orion
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout the CI commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4

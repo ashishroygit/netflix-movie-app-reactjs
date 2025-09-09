@@ -62,10 +62,44 @@ Resources:
     Properties: { ClusterName: !Sub '${NamePrefix}-cluster' }
 
 Outputs:
-  VpcId:        { Value: !Ref VPC,                           Export: { Name: !Sub '${NamePrefix}-VpcId' } }
-  PublicSubnets:{ Value: !Join [",", [!Ref PublicSubnetA, !Ref PublicSubnetB]], Export: { Name: !Sub '${NamePrefix}-PublicSubnets' } }
-  PrivateSubnets:{Value: !Join [",", [!Ref PrivateSubnetA, !Ref PrivateSubnetB]], Export: { Name: !Sub '${NamePrefix-PrivateSubnets' } }
-  AlbSg:        { Value: !Ref AlbSg,                         Export: { Name: !Sub '${NamePrefix}-AlbSg' } }
-  ServiceSg:    { Value: !Ref ServiceSg,                     Export: { Name: !Sub '${NamePrefix}-ServiceSg' } }
-  ClusterName:  { Value: !Ref Cluster,                       Export: { Name: !Sub '${NamePrefix}-ClusterName' } }
-  LogGroup:     { Value: !Ref AppLogGroup,                   Export: { Name: !Sub '${NamePrefix}-LogGroup' } }
+  VpcId:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub '${NamePrefix}-VpcId'
+
+  PublicSubnets:
+    Value: !Join
+      - ","
+      - - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+    Export:
+      Name: !Sub '${NamePrefix}-PublicSubnets'
+
+  PrivateSubnets:
+    Value: !Join
+      - ","
+      - - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+    Export:
+      Name: !Sub '${NamePrefix}-PrivateSubnets'
+
+  AlbSg:
+    Value: !Ref AlbSg
+    Export:
+      Name: !Sub '${NamePrefix}-AlbSg'
+
+  ServiceSg:
+    Value: !Ref ServiceSg
+    Export:
+      Name: !Sub '${NamePrefix}-ServiceSg'
+
+  ClusterName:
+    Value: !Ref Cluster
+    Export:
+      Name: !Sub '${NamePrefix}-ClusterName'
+
+  LogGroup:
+    Value: !Ref AppLogGroup
+    Export:
+      Name: !Sub '${NamePrefix}-LogGroup'
+

@@ -7,7 +7,7 @@ Parameters:
   Cpu:            { Type: Number, Default: 256, AllowedValues: [256,512,1024,2048,4096] }
   Memory:         { Type: Number, Default: 512, AllowedValues: [512,1024,2048,3072,4096,5120,6144,8192] }
   ContainerPort:  { Type: Number, Default: 80 }
-  HealthCheckPath:{ Type: String, Default: /health }
+  HealthCheckPath:{ Type: String, Default: / }
 
 Resources:
   TaskExecutionRole:

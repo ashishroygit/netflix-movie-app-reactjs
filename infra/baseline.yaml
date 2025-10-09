@@ -31,6 +31,7 @@ Resources:
 
   RtPublicDefault:   { Type: AWS::EC2::Route, Properties: { RouteTableId: !Ref RtPublic, DestinationCidrBlock: 0.0.0.0/0, GatewayId: !Ref IGW } }
   RtPrivateDefaultA: { Type: AWS::EC2::Route, Properties: { RouteTableId: !Ref RtPrivateA, DestinationCidrBlock: 0.0.0.0/0, NatGatewayId: !Ref NatGwA } }
+  RtPrivateDefaultB: { Type: AWS::EC2::Route, Properties: { RouteTableId: !Ref RtPrivateB, DestinationCidrBlock: 0.0.0.0/0, NatGatewayId: !Ref NatGwA } }
 
   AssocPubA:   { Type: AWS::EC2::SubnetRouteTableAssociation, Properties: { SubnetId: !Ref PublicSubnetA,  RouteTableId: !Ref RtPublic } }
   AssocPubB:   { Type: AWS::EC2::SubnetRouteTableAssociation, Properties: { SubnetId: !Ref PublicSubnetB,  RouteTableId: !Ref RtPublic } }
